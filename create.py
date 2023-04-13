@@ -9,7 +9,7 @@ import time
 
 def make_parser():
     parser = argparse.ArgumentParser(description='Create playlist of songs from the current season')
-    parser.add_argument('--range-in-days', type=int, default=300,
+    parser.add_argument('--range-in-days', type=int, default=30,
                         help='The day range around the current month and day  (default: 30)')
     return parser
     
