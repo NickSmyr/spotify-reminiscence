@@ -184,6 +184,19 @@ def run():
             
 
     new_playlist_tracks.sort(key= lambda x: datetime.strptime(x['added_at'], "%Y-%m-%dT%H:%M:%SZ"))
+    
+    # Only keep the first occurences of each song
+    uniq_new_playlist_tracks = []
+    _new_playlist_tracks_ids = set()
+    for x in new_playlist_tracks:
+        uri = x["track"]["uri"]
+        if uri not in _new_playlist_tracks_ids:
+            _new_playlist_tracks_ids.add(uri)
+            uniq_new_playlist_tracks.append(x)
+    new_playlist_tracks = uniq_new_playlist_tracks
+
+    
+    
     # Create a new playlist and add the retrieved tracks to it
 
 
