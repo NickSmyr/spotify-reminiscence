@@ -195,7 +195,9 @@ def run():
         csv_lines=[]
         csv_lines.append(",".join(["track_uri", "added_at_time", "name", "artist", "album"]))
         for track in playlists_tracks[i]:
-            print("track" , track)
+            # Local tracks I think are like this
+            if (track["track"] is None):
+                continue
             try:
                 artists = "-".join([artist["name"] for artist in track["track"]["artists"]])
                 attributes = [track["track"]["uri"], track['added_at'],track["track"]["name"],

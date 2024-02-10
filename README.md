@@ -38,7 +38,9 @@ Then install the only requirement
 pip install spotipy
 ```
 
-And finally execute the script. 
+## Creating the reminiscence playlist
+
+To create the playlist to bring you back seasonal memories, execute the following 
 
 ```sh
 python create.py
@@ -47,3 +49,14 @@ python create.py
 When the script starts you will be prompted to authenticate using your spotify account in a webpage.
 
 The script will ask you to include some playlists for your reminiscence playlist and when its finished you will see a new playlist in your library.
+
+
+## Backup playlists
+
+Executing 
+
+```sh
+python backup.py
+```
+
+Will prompt you to select the playlists that you want to back up. A csv file for each playlist will be created in the `spotipy_backed_up_playlists` directory. Each file will contain the details of all the tracks for your playlist.
