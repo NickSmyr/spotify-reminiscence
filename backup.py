@@ -5,7 +5,7 @@ import spotipy.util as util
 import argparse
 import time
 import traceback
-
+import os
 
 def make_parser():
     parser = argparse.ArgumentParser(description='Create playlist of songs from the current season')
@@ -155,7 +155,7 @@ def run():
 
     # Display the playlists and allow the user to choose which ones to include
     # Reformat the following code to be more clean
-    print("Select the playlists to include in the final playlist:")
+    print("Select the playlists to backup to files:")
     print("===============================================")
     playlists = playlists['items'] + [{"name": "Liked Songs"}]
 
@@ -163,11 +163,12 @@ def run():
         print(f"{i}. {playlist['name']}")
         
         
-    chosen_indices = input("Enter the numbers of the playlists you want to include, separated by commas: ")
+    chosen_indices = input("Enter the numbers of the playlists you want to backup, separated by commas: ")
     chosen_indices = [int(index.strip()) for index in chosen_indices.split(",")]
 
     # Retrieve the tracks that were added to the chosen playlists during the specified time frame
-    new_playlist_tracks = []
+    playlists_tracks = []
+    chosen_playlists = []
     for i, playlist in enumerate(playlists, start=1):
         if i not in chosen_indices:
             continue
@@ -178,60 +179,41 @@ def run():
         else:
             tracks = get_all_tracks_gracefully(sp, playlist["id"], playlist["name"], from_liked_songs=False, max_tracks=None)
             
-            
-        for track in tracks:
-            process_track(track , new_playlist_tracks, start_date, end_date)
-            
-
-    new_playlist_tracks.sort(key= lambda x: datetime.strptime(x['added_at'], "%Y-%m-%dT%H:%M:%SZ"))
+        tracks.sort(key= lambda x: datetime.strptime(x['added_at'], "%Y-%m-%dT%H:%M:%SZ"))
+        playlists_tracks.append(tracks)
+        chosen_playlists.append(playlist)
     
-    # Only keep the first occurences of each song
-    uniq_new_playlist_tracks = []
-    _new_playlist_tracks_ids = set()
-    for x in new_playlist_tracks:
-        try:
-            uri = x["track"]["uri"]
-            if uri not in _new_playlist_tracks_ids:
-                _new_playlist_tracks_ids.add(uri)
-                uniq_new_playlist_tracks.append(x)
-        except TypeError as e:
-            print("Track ", x, " Had some null values... not adding")
-            print(e)
-            traceback.print_exc()
-    new_playlist_tracks = uniq_new_playlist_tracks
 
+    bckup_folder = "spotipy_backed_up_playlists"
+    if not os.path.exists(bckup_folder):
+        os.mkdir(bckup_folder)
     
-    
-    # Create a new playlist and add the retrieved tracks to it
+    print("Backing up the playlists.. I hope no artists has a comma in their name right?")
+    for i in range(len(chosen_playlists)):
+        playlist_name = chosen_playlists[i]["name"]
+        output_fname = os.path.join(bckup_folder, playlist_name)
+        csv_lines=[]
+        csv_lines.append(",".join(["track_uri", "added_at_time", "name", "artist", "album"]))
+        for track in playlists_tracks[i]:
+            print("track" , track)
+            try:
+                artists = "-".join([artist["name"] for artist in track["track"]["artists"]])
+                attributes = [track["track"]["uri"], track['added_at'],track["track"]["name"],
+                               artists, track["track"]["album"]["name"]]
+            except KeyError:
+                print("A track has not been backed up because it is malformed.. maybe you can" +\
+                       "add it to the backed up files  manually:")
+                print(track)
 
+            line = ",".join(attributes)
+            csv_lines.append(line)
+        csv_contents = "\n".join(csv_lines)
+        
 
-    # Create a new playlist
-    playlist_name = "reminiscence {} - {}".format(
-        start_date.strftime("%B %d"), end_date.strftime("%B %d"))
-    playlist_description = "Songs between {} and {}, created by reminiscence".format(
-        start_date.strftime("%B %d"), end_date.strftime("%B %d"))
-    playlist = sp.user_playlist_create(sp.current_user()['id'], playlist_name, public=False, description=playlist_description)
+        print(f"Saving playlist {playlist_name} at {output_fname}")
+        with open(output_fname, "w") as f:
+            f.write(csv_contents)
 
-    # Add tracks to the new playlist
-    if (len(new_playlist_tracks) > 0):
-        # Playlists can have users to so we have to filter them out
-        new_playlist_tracks = list(filter(lambda x: is_item_valid(x), new_playlist_tracks))
-        for track in new_playlist_tracks:
-            uri  = track["track"]["uri"]
-            if uri_is_invalid(uri):
-                print("Warning: Track {} has Invalid URI, will be skipped.".format(track["track"]["name"]))
-                
-        gracefully_add_tracks_to_playlist(sp, playlist['id'], list(
-                    filter(lambda x: not uri_is_invalid(x),
-                    map(lambda x: x["track"]["uri"], new_playlist_tracks))
-                    )
-        )
-        print(f"We found {len(new_playlist_tracks)} in-season songs for you!")
-        print(f"A new playlist has been created with name: \"{playlist_name}\"!" +
-            " You can find it in your Spotify library.")
-            
-    else:
-        print("No songs were found for the current season, so no playlist was created.")
         
 if __name__ == "__main__":
     run()
