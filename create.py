@@ -110,7 +110,9 @@ def gracefully_add_tracks_to_playlist(sp : spotipy.Spotify,
         try:
             sp.playlist_add_items(playlist_id, track_uris[i : i + 100], )
             print(f"\r   Progress: {min(i+100, len(track_uris))}/ {len(track_uris)} songs", end="")
-        except spotipy.exceptions.SpotifyException:
+        except spotipy.exceptions.SpotifyException as e:
+            print("We got a spotipy exception while adding songs to the playlist...")
+            print(traceback.format_exc())
             pass
         time.sleep(1.5)
     print()
@@ -139,7 +141,7 @@ def run():
     # Set up the Spotify API client
     sp = spotipy.Spotify(auth_manager=SpotifyOAuth())
     token = util.prompt_for_user_token(sp.current_user()["display_name"],
-                    scope="playlist-read-private user-library-read playlist-modify-private")
+                    scope="playlist-read-private user-library-read playlist-modify-private playlist-modify-public")
 
     sp = spotipy.Spotify(auth=token, auth_manager=SpotifyOAuth())
 
