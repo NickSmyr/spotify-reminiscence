@@ -11,6 +11,8 @@ def make_parser():
     parser = argparse.ArgumentParser(description='Create playlist of songs from the current season')
     parser.add_argument('--range-in-days', type=int, default=30,
                         help='The day range around the current month and day  (default: 30)')
+    parser.add_argument('--summer-vibes', action='store_true', default=False,
+                        help="Just your songs from June to August of all past years")
     return parser
     
     
@@ -69,22 +71,18 @@ def get_all_tracks_gracefully(sp : spotipy.Spotify,
     res = []
     print("Retrieving songs from playlist: {}".format(playlist_name))
     while True:
-        try:
-            print("\r   Progress: {} songs".format(offset), end="")
-            if (from_liked_songs):
-                new_tracks = sp.current_user_saved_tracks(offset = offset, limit=limit)["items"]
-            else:    
-                new_tracks = sp.playlist_items(playlist_id, offset = offset, limit=limit)["items"]
-            res.extend(new_tracks)
-            offset += len(new_tracks)
-            if (len(new_tracks) < limit):
-                break
-            if (max_tracks is not None and offset >= max_tracks):
-                break
-            
-        except:
+        print("\r   Progress: {} songs".format(offset), end="")
+        if (from_liked_songs):
+            new_tracks = sp.current_user_saved_tracks(offset = offset, limit=limit)["items"]
+        else:    
+            new_tracks = sp.playlist_items(playlist_id, offset = offset, limit=limit)["items"]
+        res.extend(new_tracks)
+        offset += len(new_tracks)
+        if (len(new_tracks) < limit):
             break
-        
+        if (max_tracks is not None and offset >= max_tracks):
+            break
+ 
         time.sleep(1.5)
     print("\r   {} songs to be analyzed".format(offset))
     return res
@@ -125,6 +123,9 @@ def create_date_range(args):
     last_year = now - timedelta(days=365)
     start_date = last_year - timedelta(days=args.range_in_days // 2)
     end_date = last_year + timedelta(days=args.range_in_days // 2)
+    if args.summer_vibes:
+        start_date = datetime(1999, 6, 1)
+        end_date = datetime(now.year,8,31)
     return start_date, end_date
 
 def uri_is_invalid(uri):
