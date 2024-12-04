@@ -96,6 +96,25 @@ def get_all_tracks_gracefully(sp : spotipy.Spotify,
 #         return True if result else False
 #     except Exception as e:
 #         return False
+
+def get_all_playlists_gracefully(sp):
+    playlists = []
+    lastempty = False
+    limit = 50
+    offset = 0
+    while not lastempty:
+        request_playlists = sp.current_user_playlists(offset=offset, limit=limit)['items']
+        playlists.extend(request_playlists)
+        offset += len(request_playlists)
+        if len(request_playlists) == 0:
+            lastempty = True
+        time.sleep(1)
+
+    playlists = [x for x in playlists if x is not None]
+
+
+    playlists.sort(key=lambda x:x['name'])
+    return playlists
   
 def gracefully_add_tracks_to_playlist(sp : spotipy.Spotify,
                                       playlist_id,
@@ -151,13 +170,13 @@ def run():
     start_date, end_date = create_date_range(args)
 
     # Retrieve the user's playlists
-    playlists = sp.current_user_playlists()
+    playlists = get_all_playlists_gracefully(sp)
 
     # Display the playlists and allow the user to choose which ones to include
     # Reformat the following code to be more clean
     print("Select the playlists to backup to files:")
     print("===============================================")
-    playlists = playlists['items'] + [{"name": "Liked Songs"}]
+    playlists = playlists + [{"name": "Liked Songs"}]
 
     for i, playlist in enumerate(playlists, start=1):
         print(f"{i}. {playlist['name']}")

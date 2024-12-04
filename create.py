@@ -150,6 +150,8 @@ def get_all_playlists_gracefully(sp):
             lastempty = True
         time.sleep(1)
 
+    playlists = [x for x in playlists if x is not None]
+    
     playlists.sort(key=lambda x:x['name'])
     return playlists
     
